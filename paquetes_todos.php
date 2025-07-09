@@ -562,6 +562,32 @@ function aplicar_todos() {
         form.submit();
     }
 }
+
+// Function to close action modal and reload table
+function closeActionModal() {
+    const modal = document.getElementById('actionModal');
+    if (modal) {
+        const bootstrapModal = bootstrap.Modal.getInstance(modal);
+        if (bootstrapModal) {
+            bootstrapModal.hide();
+        }
+    }
+    
+    // Reload DataTable
+    if (window.paquetesTable && typeof window.paquetesTable.ajax === 'object') {
+        window.paquetesTable.ajax.reload();
+    }
+}
+
+// Make closeActionModal globally available
+window.closeActionModal = closeActionModal;
+
+// Function to reload DataTable from modal context
+function reloadParentTable() {
+    if (window.paquetesTable && typeof window.paquetesTable.ajax === 'object') {
+        window.paquetesTable.ajax.reload();
+    }
+}
 function ver_documento_pdf(url, codigo_barra) {
     if (url == "") {
         alert("No tiene documento cargado");
@@ -799,31 +825,31 @@ function change(combo_name, codigo_barra, seccion, tracking, ciudad) {
     
     switch(accion) {
         case "1":
-            window.location = "index2.php?component=cancelar_paquete_todos&codigo_barra=" + codigo_barra;
+            openActionModal('Cancelar Paquete', 'cancelar_paquete_todos.php?codigo_barra=' + codigo_barra);
             break;
         case "2":
-            window.location = "index2.php?component=cargar_documento_todos&codigo_barra=" + codigo_barra;
+            openActionModal('Cargar Documento', 'cargar_documento_todos.php?codigo_barra=' + codigo_barra);
             break;
         case "3":
-            window.location = "index2.php?component=revisar_prealertas_todos&codigo_barra=" + codigo_barra;
+            openActionModal('Revisar Prealertas', 'revisar_prealertas_todos.php?codigo_barra=' + codigo_barra);
             break;
         case "4":
-            window.location = "index2.php?component=revisar_codigosbarra_todos&codigo_barra=" + codigo_barra;
+            openActionModal('Revisar Códigos Barra', 'revisar_codigosbarra_todos.php?codigo_barra=' + codigo_barra);
             break;
         case "5":
-            window.location = "index2.php?component=paquete_llamada_todos&codigo_barra=" + codigo_barra;
+            openActionModal('Paquete Llamada', 'paquete_llamada_todos.php?codigo_barra=' + codigo_barra);
             break;
         case "6":
-            window.location = "index2.php?component=enviar_link_todos&codigo_barra=" + codigo_barra + "&todos=1";
+            openActionModal('Enviar Link', 'enviar_link_todos.php?codigo_barra=' + codigo_barra + '&todos=1');
             break;
         case "7":
-            window.location = "index2.php?component=modificar_valor_contenido_todos&codigo_barra=" + codigo_barra + "&todos=1";
+            openActionModal('Modificar Valor Contenido', 'modificar_valor_contenido_todos.php?codigo_barra=' + codigo_barra + '&todos=1');
             break;
         case "8":
-            window.location = "index2.php?component=modificar_valor_declarado&codigo_barra=" + codigo_barra + "&todos=1";
+            openActionModal('Modificar Valor Declarado', 'modificar_valor_declarado.php?codigo_barra=' + codigo_barra + '&todos=1');
             break;
         case "9":
-            window.location = "index2.php?component=modificar_multiple&codigo_barra=" + codigo_barra + "&todos=1";
+            openActionModal('Modificar Multiple', 'modificar_multiple.php?codigo_barra=' + codigo_barra + '&todos=1');
             break;
         case "10":
             if (confirm("¿Está seguro de reemplazar factura el CB " + codigo_barra + "?") == true) {
@@ -842,14 +868,102 @@ function change(combo_name, codigo_barra, seccion, tracking, ciudad) {
             }
             break;
         case "11":
-            window.location = "index2.php?component=validar_paquete&codigo_barra=" + codigo_barra + "&todos=1";
+            openActionModal('Validar Paquete', 'validar_paquete.php?codigo_barra=' + codigo_barra + '&todos=1');
             break;
         case "12":
-            window.location = "index2.php?component=actualizar_partida&codigo_barra=" + codigo_barra + "&todos=1";
+            openActionModal('Actualizar Partida', 'actualizar_partida.php?codigo_barra=' + codigo_barra + '&todos=1');
             break;
         case "13":
-            window.location = "index2.php?component=modificar_multiple&codigo_barra=" + codigo_barra + "&todos=1";
+            openActionModal('Modificar Multiple', 'modificar_multiple.php?codigo_barra=' + codigo_barra + '&todos=1');
             break;
     }
+}
+
+// Function to open action modals
+function openActionModal(title, url) {
+    const modalId = 'actionModal';
+    let modal = document.getElementById(modalId);
+    
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = modalId;
+        modal.tabIndex = -1;
+        modal.innerHTML = `
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="actionModalLabel">${title}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="actionModalBody">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        // Update existing modal
+        modal.querySelector('.modal-title').textContent = title;
+        modal.querySelector('#actionModalBody').innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        `;
+    }
+    
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
+    
+    // Load content via AJAX
+    fetch(url)
+        .then(response => response.text())
+        .then(data => {
+            modal.querySelector('#actionModalBody').innerHTML = data;
+            
+            // Ensure jQuery is available in the modal context
+            if (typeof $ !== 'undefined') {
+                // Make jQuery available to the modal content
+                modal.querySelector('#actionModalBody').$ = $;
+            }
+            
+            // Execute any scripts in the loaded content
+            const scripts = modal.querySelectorAll('#actionModalBody script');
+            scripts.forEach(script => {
+                const newScript = document.createElement('script');
+                if (script.src) {
+                    newScript.src = script.src;
+                } else {
+                    // Modify script content to work in modal context
+                    let scriptContent = script.textContent;
+                    
+                    // Replace window.location redirects with modal close
+                    scriptContent = scriptContent.replace(
+                        /window\.location\s*=\s*["']index2\.php\?component=paquetes_todos["']/g,
+                        'window.closeActionModal()'
+                    );
+                    
+                    newScript.textContent = scriptContent;
+                }
+                document.head.appendChild(newScript);
+            });
+        })
+        .catch(error => {
+            modal.querySelector('#actionModalBody').innerHTML = '<div class="alert alert-danger">Error cargando contenido: ' + error.message + '</div>';
+        });
+    
+    // Add event listener for modal close to reload DataTable
+    modal.addEventListener('hidden.bs.modal', function () {
+        if (window.paquetesTable && typeof window.paquetesTable.ajax === 'object') {
+            window.paquetesTable.ajax.reload();
+        }
+    });
 }
 </script>
