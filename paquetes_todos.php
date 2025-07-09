@@ -573,21 +573,21 @@ function closeActionModal() {
         }
     }
     
-    // Reload DataTable
-    if (window.paquetesTable && typeof window.paquetesTable.ajax === 'object') {
-        window.paquetesTable.ajax.reload();
-    }
+    // Don't reload DataTable automatically - only reload when explicitly called
 }
 
 // Make closeActionModal globally available
 window.closeActionModal = closeActionModal;
 
-// Function to reload DataTable from modal context
+// Function to reload DataTable from modal context (called after successful save)
 function reloadParentTable() {
     if (window.paquetesTable && typeof window.paquetesTable.ajax === 'object') {
         window.paquetesTable.ajax.reload();
     }
 }
+
+// Make reloadParentTable globally available for modal actions
+window.reloadParentTable = reloadParentTable;
 function ver_documento_pdf(url, codigo_barra) {
     if (url == "") {
         alert("No tiene documento cargado");
@@ -859,10 +859,9 @@ function change(combo_name, codigo_barra, seccion, tracking, ciudad) {
                     csrf_token: '<?php echo SecurityManager::generateCSRFToken(); ?>'
                 }, function (respuesta) {
                     alert("Factura reemplazada");
+                    // Reload DataTable after successful save
                     if (window.paquetesTable && typeof window.paquetesTable.ajax === 'object') {
                         window.paquetesTable.ajax.reload();
-                    } else {
-                        window.location = "index2.php?component=paquetes_todos";
                     }
                 });
             }
@@ -959,11 +958,6 @@ function openActionModal(title, url) {
             modal.querySelector('#actionModalBody').innerHTML = '<div class="alert alert-danger">Error cargando contenido: ' + error.message + '</div>';
         });
     
-    // Add event listener for modal close to reload DataTable
-    modal.addEventListener('hidden.bs.modal', function () {
-        if (window.paquetesTable && typeof window.paquetesTable.ajax === 'object') {
-            window.paquetesTable.ajax.reload();
-        }
-    });
+    // Modal close event listener removed - DataTable will only reload on explicit save actions
 }
 </script>
